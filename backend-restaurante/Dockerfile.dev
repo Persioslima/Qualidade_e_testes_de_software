@@ -1,0 +1,19 @@
+# Etapa única — imagem para desenvolvimento com Maven e hot reload
+FROM maven:3.9.9-eclipse-temurin-17
+
+WORKDIR /app
+
+# Copia o POM primeiro para baixar dependências
+COPY pom.xml .
+
+# Baixa dependências para cache (não recompila tudo sempre)
+RUN mvn dependency:go-offline
+
+# Copia todo o código-fonte
+COPY . .
+
+# Expõe a porta padrão da aplicação
+EXPOSE 8080
+
+# Roda o Spring Boot diretamente com Maven (sem gerar jar)
+CMD ["mvn", "spring-boot:run"]

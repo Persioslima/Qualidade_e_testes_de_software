@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meus Pedidos</title>
+    <style>
+        body { font-family: Arial, sans-serif; background:#f6f6f6; margin:0; padding:20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .card { background:#fff; border:1px solid #eee; border-radius:8px; padding:16px; margin-bottom:12px; }
+        .muted { color:#666; }
+        .row { display:flex; gap:12px; align-items:center; }
+        .badge { background:#eee; border-radius:4px; padding:2px 6px; font-size:12px; }
+        textarea { width: 100%; min-height: 80px; }
+        button { padding: 8px 12px; margin-top:8px; }
+    </style>
+    <script>
+        async function fetchAuth(url) {
+            const res = await fetch(url, { credentials: 'include' });
+            if (res.status === 401) {
+                const current = encodeURIComponent(window.location.pathname + window.location.search);
+                window.location.href = `/clientes.html?redirect=${current}`;
+                throw new Error('Redirecionando para login');
+            }
+            if (!res.ok) throw new Error('Falha ao carregar');
+            const ct = res.headers.get('content-type') || '';
+            if (ct.includes('application/json')) return res.json();
+            const t = await res.text();
+            try { return JSON.parse(t); } catch { throw new Error('Resposta inválida'); }
+        }
+
+        async function avaliarItem(itemRestauranteId, nota, comentario) {
+            // Avalia por itemRestauranteId (não por itemPedidoId)
+            const payload = { nota: Number(nota), comentario: comentario, prato: { id: itemRestauranteId } };
+            const res = await fetch('/avaliacoes-prato', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) {
+                const t = await res.text();
+                throw new Error(t);
+            }
+        }
+
+        async function init() {
+            try {
+                const pedidos = await fetchAuth('/pedidos');
+                const wrap = document.getElementById('wrap');
+                wrap.innerHTML = '';
+                if (!Array.isArray(pedidos) || pedidos.length === 0) {
+                    wrap.innerHTML = '<div class="muted">Nenhum pedido</div>';
+                    return;
+                }
+                pedidos.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    const podeAvaliar = (p.status || '').toUpperCase() === 'CONCLUIDO';
+                    card.innerHTML = `
+                        <div class="row"><strong>Pedido #${p.id}</strong> <span class="badge">${p.status}</span></div>
+                        <div class="muted">Criado em: ${p.criadoEm || ''}</div>
+                        <div class="muted">Restaurante: ${p.restaurante ? p.restaurante.nome : ''}</div>
+                        <div><strong>Itens:</strong></div>
+                        <ul>
+                        ${(p.itens || []).map(i => `
+                            <li>
+                              ${i.itemRestaurante ? i.itemRestaurante.nome : 'Item'} x ${i.quantidade}
+                              ${podeAvaliar && i.itemRestaurante ? `
+                                <div style="margin-top:6px;">
+                                  <label>Nota: <input type="number" min="1" max="5" id="nota-item-${p.id}-${i.itemRestaurante.id}" value="5" style="width:60px"></label>
+                                  <textarea id="coment-item-${p.id}-${i.itemRestaurante.id}" placeholder="Comentário" style="width:100%;min-height:60px"></textarea>
+                                  <button data-avaliar-item data-pid="${p.id}" data-itemid="${i.itemRestaurante.id}">Avaliar este item</button>
+                                </div>
+                              ` : ''}
+                            </li>
+                        `).join('')}
+                        </ul>
+                        ${!podeAvaliar ? '<div class="muted">A avaliação só é permitida para pedidos concluídos.</div>' : ''}
+                    `;
+                    if (podeAvaliar) {
+                        card.querySelectorAll('[data-avaliar-item]').forEach(btn => {
+                            btn.addEventListener('click', async () => {
+                                const itemId = btn.getAttribute('data-itemid');
+                                const nota = document.getElementById(`nota-item-${p.id}-${itemId}`).value;
+                                const comentario = document.getElementById(`coment-item-${p.id}-${itemId}`).value;
+                                try {
+                                    await avaliarItem(Number(itemId), nota, comentario);
+                                    alert('Avaliação enviada!');
+                                } catch (e) {
+                                    alert('Erro ao avaliar: ' + e.message);
+                                }
+                            });
+                        });
+                    }
+                    wrap.appendChild(card);
+                });
+            } catch (e) {
+                document.getElementById('erro').textContent = e.message;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Meus Pedidos</h1>
+        <div id="erro" class="muted"></div>
+        <div id="wrap"></div>
+    </div>
+</body>
+</html>
+

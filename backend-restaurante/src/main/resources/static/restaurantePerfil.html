@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil do Restaurante</title>
+    <style>
+        body { font-family: Arial, sans-serif; background:#f6f6f6; margin:0; padding:20px; }
+        .container { max-width: 1000px; margin: 0 auto; background:#fff; padding:20px; border-radius:8px; }
+        h1, h2 { margin: 10px 0; }
+        .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background:#fafafa; border:1px solid #eee; border-radius:6px; padding:15px; }
+        ul { padding-left: 18px; }
+        .muted { color:#666; }
+        .row { display:flex; gap: 10px; align-items:center; }
+        .badge { background:#eee; border-radius:4px; padding:2px 6px; font-size:12px; }
+        img { max-width:100%; border-radius:6px; border:1px solid #eee; }
+    </style>
+    <script>
+        function getQueryParam(name) {
+            const params = new URLSearchParams(window.location.search);
+            return params.get(name);
+        }
+
+        async function fetchJson(url) {
+            const res = await fetch(url, { credentials: 'include' });
+            if (!res.ok) throw new Error(`Falha ao carregar ${url}`);
+            const ct = res.headers.get('content-type') || '';
+            if (ct.includes('application/json')) return res.json();
+            const text = await res.text();
+            try { return JSON.parse(text); } catch { throw new Error('Resposta inválida'); }
+        }
+
+        function fmt(value) { return value ?? ''; }
+
+        function renderRestaurante(r) {
+            document.getElementById('nome').textContent = r.nome;
+            document.getElementById('descricao').textContent = fmt(r.descricao) || 'Sem descrição';
+            document.getElementById('endereco').textContent = [r.rua, r.numero, r.bairro, r.cidade, r.estado, r.cep].filter(Boolean).join(', ');
+            document.getElementById('contatos').textContent = [r.telefone, r.site, r.facebook, r.instagram, r.whatsapp].filter(Boolean).join(' | ');
+            if (r.logoUrl) document.getElementById('logo').src = r.logoUrl; else document.getElementById('logo').style.display='none';
+            if (r.bannerUrl) document.getElementById('banner').src = r.bannerUrl; else document.getElementById('banner').style.display='none';
+            document.getElementById('media').textContent = (typeof r.avaliacaoMedia === 'number') ? r.avaliacaoMedia.toFixed(1) : '0.0';
+        }
+
+        function renderItens(itens) {
+            const ul = document.getElementById('itens');
+            ul.innerHTML = '';
+            if (!Array.isArray(itens) || itens.length === 0) {
+                ul.innerHTML = '<li class="muted">Nenhum item cadastrado</li>';
+                return;
+            }
+            itens.forEach(i => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <strong>${i.nome}</strong> - R$ ${Number(i.preco || 0).toFixed(2)}
+                    <br><span class="muted">${fmt(i.descricao)}</span>
+                    ${i.imagemUrl ? `<br><img src="${i.imagemUrl}" alt="${i.nome}"/>` : ''}
+                    <br>
+                    <button data-add-item>Adicionar</button>
+                `;
+                li.querySelector('[data-add-item]').addEventListener('click', async () => {
+                    try {
+                        await requireAuthOrRedirect();
+                        const qtdStr = prompt('Quantidade', '1');
+                        const qtd = Math.max(1, parseInt(qtdStr || '1', 10));
+                        const obs = prompt('Observações (opcional)', '') || '';
+                        addToCart({ itemRestauranteId: i.id, nome: i.nome, quantidade: qtd, observacoes: obs });
+                    } catch(_) {}
+                });
+                ul.appendChild(li);
+            });
+        }
+
+        function renderAvaliacoes(list) {
+            const ul = document.getElementById('avaliacoes');
+            ul.innerHTML = '';
+            if (!Array.isArray(list) || list.length === 0) {
+                ul.innerHTML = '<li class="muted">Nenhuma avaliação ainda</li>';
+                return;
+            }
+            list.forEach(a => {
+                const li = document.createElement('li');
+                const cliente = a.cliente && a.cliente.nome ? a.cliente.nome : 'Cliente';
+                const data = a.dataAvaliacao ? new Date(a.dataAvaliacao).toLocaleString() : '';
+                li.innerHTML = `<span class="badge">${a.nota}</span> ${cliente} <span class="muted">(${data})</span><br>${fmt(a.comentario)}`;
+                ul.appendChild(li);
+            });
+        }
+
+        const carrinho = [];
+
+        function refreshCartUI() {
+            const list = document.getElementById('cartList');
+            const totalEl = document.getElementById('cartTotal');
+            list.innerHTML = '';
+            if (carrinho.length === 0) {
+                list.innerHTML = '<li class="muted">Carrinho vazio</li>';
+                totalEl.textContent = '0 itens';
+                return;
+            }
+            let totalItens = 0;
+            carrinho.forEach((c, idx) => {
+                totalItens += c.quantidade || 0;
+                const li = document.createElement('li');
+                li.innerHTML = `${c.nome} x ${c.quantidade} ${c.observacoes ? `- <span class="muted">${c.observacoes}</span>` : ''} <button data-rm>remover</button>`;
+                li.querySelector('[data-rm]').addEventListener('click', () => {
+                    carrinho.splice(idx, 1);
+                    refreshCartUI();
+                });
+                list.appendChild(li);
+            });
+            totalEl.textContent = `${totalItens} item(ns)`;
+        }
+
+        function addToCart(entry) {
+            carrinho.push(entry);
+            refreshCartUI();
+            const msg = document.getElementById('erro');
+            msg.textContent = 'Item adicionado ao carrinho';
+            setTimeout(() => { msg.textContent = ''; }, 1200);
+        }
+
+        async function requireAuthOrRedirect() {
+            // Verifica se está logado tentando acessar /pedidos (GET exige auth)
+            const res = await fetch('/pedidos', { credentials: 'include' });
+            if (res.status === 401) {
+                const current = encodeURIComponent(window.location.pathname + window.location.search);
+                window.location.href = `/clientes.html?redirect=${current}`;
+                throw new Error('Redirecionando para login');
+            }
+        }
+
+        async function finalizarPedido(restauranteId) {
+            if (carrinho.length === 0) return;
+            const payload = {
+                restauranteId: Number(restauranteId),
+                observacoesGerais: '',
+                itens: carrinho.map(i => ({
+                    itemRestauranteId: i.itemRestauranteId,
+                    quantidade: i.quantidade,
+                    observacoes: i.observacoes
+                }))
+            };
+
+            const res = await fetch('/pedidos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(payload)
+            });
+            if (res.status === 401) {
+                const current = encodeURIComponent(window.location.pathname + window.location.search);
+                window.location.href = `/clientes.html?redirect=${current}`;
+                return;
+            }
+            if (!res.ok) {
+                const ct = res.headers.get('content-type') || '';
+                let msg = 'Falha ao criar pedido';
+                if (ct.includes('application/json')) {
+                    const j = await res.json();
+                    msg = j.message || msg;
+                } else {
+                    msg = await res.text();
+                }
+                throw new Error(msg);
+            }
+            let pedido;
+            const ct2 = res.headers.get('content-type') || '';
+            if (ct2.includes('application/json')) {
+                pedido = await res.json();
+            } else {
+                const t = await res.text();
+                try { pedido = JSON.parse(t); } catch { pedido = { id: '?' }; }
+            }
+            carrinho.splice(0, carrinho.length);
+            refreshCartUI();
+            const msg = document.getElementById('erro');
+            msg.textContent = `Pedido criado com sucesso (ID ${pedido.id})`;
+        }
+
+        async function init() {
+            const id = getQueryParam('id');
+            if (!id) {
+                document.getElementById('erro').textContent = 'Informe ?id=ID do restaurante na URL';
+                return;
+            }
+            try {
+                const [restaurante, itens, avaliacoes] = await Promise.all([
+                    fetchJson(`/restaurantes/${id}`),
+                    fetchJson(`/itens/restaurante/${id}`),
+                    fetchJson(`/avaliacoes/${id}`)
+                ]);
+                renderRestaurante(restaurante);
+                const link = document.getElementById('linkAvaliar');
+                if (link) { link.href = `/avaliacao.html?restauranteId=${id}`; }
+                renderItens(itens);
+                renderAvaliacoes(avaliacoes);
+                document.getElementById('btnFinalizar').addEventListener('click', async () => {
+                    try {
+                        await requireAuthOrRedirect();
+                        await finalizarPedido(id);
+                    } catch (e) {
+                        document.getElementById('erro').textContent = e.message;
+                    }
+                });
+            } catch (e) {
+                document.getElementById('erro').textContent = e.message;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+    </head>
+<body>
+    <div class="container">
+        <div id="erro" class="muted"></div>
+        <div class="grid">
+            <div class="card">
+                <h1 id="nome">Restaurante</h1>
+                <a id="linkAvaliar" class="muted" href="#">Avaliar este restaurante</a>
+                <div class="row">
+                    <img id="logo" alt="logo" style="max-width:120px"/>
+                    <img id="banner" alt="banner"/>
+                </div>
+                <p id="descricao" class="muted"></p>
+                <p><strong>Média de avaliações:</strong> <span id="media">0.0</span></p>
+                <p><strong>Endereço:</strong> <span id="endereco"></span></p>
+                <p><strong>Contato:</strong> <span id="contatos"></span></p>
+            </div>
+            <div class="card">
+                <h2>Cardápio</h2>
+                <ul id="itens"></ul>
+            </div>
+        </div>
+        <div class="card" style="margin-top:20px;">
+            <h2>Avaliações</h2>
+            <ul id="avaliacoes"></ul>
+        </div>
+        <div class="card" style="margin-top:20px;">
+            <h2>Carrinho</h2>
+            <ul id="cartList"></ul>
+            <p class="muted" id="cartTotal">0 itens</p>
+            <button id="btnFinalizar">Finalizar Pedido</button>
+        </div>
+    </div>
+</body>
+</html>
+

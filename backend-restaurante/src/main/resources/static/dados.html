@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciamento de Entidades</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Alinha no topo */
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 800px;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .actions-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        .actions-buttons button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+        }
+        .actions-buttons .edit { background-color: #ffc107; }
+        .actions-buttons .delete { background-color: #dc3545; }
+        .actions-buttons .edit:hover { background-color: #e0a800; }
+        .actions-buttons .delete:hover { background-color: #c82333; }
+
+        .form-edit-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        .form-edit-section label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .form-edit-section input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        .form-edit-section button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Gerenciamento de Clientes</h2>
+    <table id="tabelaClientes">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>CPF</th>
+            <th>Ações</th>
+        </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <div id="formUpdateCliente" class="form-edit-section" style="display: none;">
+        <h3>Atualizar Cliente</h3>
+        <form id="formClienteUpdate">
+            <input type="hidden" id="updateIdCliente" name="id">
+            <label for="updateNomeCliente">Nome:</label>
+            <input type="text" id="updateNomeCliente" name="nome">
+            <label for="updateEmailCliente">Email:</label>
+            <input type="email" id="updateEmailCliente" name="email">
+            <button type="submit">Salvar Alterações</button>
+        </form>
+    </div>
+</div>
+
+<div class="container">
+    <h2>Gerenciamento de Restaurantes</h2>
+    <table id="tabelaRestaurantes">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>CNPJ</th>
+            <th>Ações</th>
+        </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <div id="formUpdateRestaurante" class="form-edit-section" style="display: none;">
+        <h3>Atualizar Restaurante</h3>
+        <form id="formRestauranteUpdate">
+            <input type="hidden" id="updateIdRestaurante" name="id">
+            <label for="updateNomeRestaurante">Nome:</label>
+            <input type="text" id="updateNomeRestaurante" name="nome">
+            <label for="updateEmailRestaurante">Email:</label>
+            <input type="email" id="updateEmailRestaurante" name="email">
+            <label for="updateCnpjRestaurante">CNPJ:</label>
+            <input type="text" id="updateCnpjRestaurante" name="cnpj" disabled> <button type="submit">Salvar Alterações</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        carregarClientes();
+        carregarRestaurantes();
+    });
+
+    // Funções de Gerenciamento de Clientes
+
+    async function carregarClientes() {
+        const response = await fetch('/clientes');
+        const clientes = await response.json();
+        const tbody = document.querySelector('#tabelaClientes tbody');
+        tbody.innerHTML = '';
+        clientes.forEach(cliente => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${cliente.id}</td>
+                <td>${cliente.nome}</td>
+                <td>${cliente.email}</td>
+                <td>${cliente.cpf}</td>
+                <td class="actions-buttons">
+                    <button class="edit" onclick="editarCliente(${cliente.id}, '${cliente.nome}', '${cliente.email}')">Editar</button>
+                    <button class="delete" onclick="deletarCliente(${cliente.id})">Excluir</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function editarCliente(id, nome, email) {
+        document.getElementById('formUpdateCliente').style.display = 'block';
+        document.getElementById('updateIdCliente').value = id;
+        document.getElementById('updateNomeCliente').value = nome;
+        document.getElementById('updateEmailCliente').value = email;
+    }
+
+    document.getElementById('formClienteUpdate').addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const id = document.getElementById('updateIdCliente').value;
+        const nome = document.getElementById('updateNomeCliente').value;
+        const email = document.getElementById('updateEmailCliente').value;
+
+        const response = await fetch(`/clientes/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, email })
+        });
+
+        if (response.ok) {
+            alert('Cliente atualizado com sucesso!');
+            document.getElementById('formUpdateCliente').style.display = 'none';
+            carregarClientes();
+        } else {
+            alert('Erro ao atualizar cliente.');
+        }
+    });
+
+    async function deletarCliente(id) {
+        if (confirm('Tem certeza que deseja excluir este cliente?')) {
+            const response = await fetch(`/clientes/${id}`, { method: 'DELETE' });
+            if (response.status === 204) {
+                alert('Cliente excluído com sucesso!');
+                carregarClientes();
+            } else {
+                alert('Erro ao excluir cliente.');
+            }
+        }
+    }
+
+    // Funções de Gerenciamento de Restaurantes
+
+    function editarRestaurante(id, nome, email, cnpj) {
+    document.getElementById('formUpdateRestaurante').style.display = 'block';
+    document.getElementById('updateIdRestaurante').value = id;
+    document.getElementById('updateNomeRestaurante').value = nome;
+    document.getElementById('updateEmailRestaurante').value = email;
+    document.getElementById('updateCnpjRestaurante').value = cnpj; // Preenche o campo CNPJ
+}
+
+document.getElementById('formRestauranteUpdate').addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const id = document.getElementById('updateIdRestaurante').value;
+    const nome = document.getElementById('updateNomeRestaurante').value;
+    const email = document.getElementById('updateEmailRestaurante').value;
+    const cnpj = document.getElementById('updateCnpjRestaurante').value; // Captura o valor do CNPJ
+
+    const restauranteData = {
+        id,
+        nome,
+        email,
+        cnpj // Inclui o CNPJ na requisição
+    };
+
+    const response = await fetch(`/restaurantes/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(restauranteData)
+    });
+
+    if (response.ok) {
+        alert('Restaurante atualizado com sucesso!');
+        document.getElementById('formUpdateRestaurante').style.display = 'none';
+        carregarRestaurantes();
+    } else {
+        alert('Erro ao atualizar restaurante.');
+    }
+});
+
+async function carregarRestaurantes() {
+    const response = await fetch('/restaurantes');
+    const restaurantes = await response.json();
+    const tbody = document.querySelector('#tabelaRestaurantes tbody');
+    tbody.innerHTML = '';
+    restaurantes.forEach(restaurante => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${restaurante.id}</td>
+            <td>${restaurante.nome}</td>
+            <td>${restaurante.email}</td>
+            <td>${restaurante.cnpj}</td>
+            <td class="actions-buttons">
+                <button class="edit" onclick="editarRestaurante(${restaurante.id}, '${restaurante.nome}', '${restaurante.email}', '${restaurante.cnpj}')">Editar</button>
+                <button class="delete" onclick="deletarRestaurante(${restaurante.id})">Excluir</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+    async function deletarRestaurante(id) {
+        if (confirm('Tem certeza que deseja excluir este restaurante?')) {
+            const response = await fetch(`/restaurantes/${id}`, { method: 'DELETE' });
+            if (response.status === 204) {
+                alert('Restaurante excluído com sucesso!');
+                carregarRestaurantes();
+            } else {
+                alert('Erro ao excluir restaurante.');
+            }
+        }
+    }
+</script>
+
+</body>
+</html>

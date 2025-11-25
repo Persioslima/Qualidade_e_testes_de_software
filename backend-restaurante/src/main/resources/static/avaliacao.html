@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avaliar Restaurante</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        label {
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="number"], textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        button {
+            padding: 12px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Adicionar Avaliação</h2>
+    <label for="restauranteSelect">Restaurante:</label>
+    <select id="restauranteSelect">
+        <option value="">Selecione um restaurante</option>
+    </select>
+    <form id="avaliacaoForm">
+        <input type="hidden" name="restauranteId" id="restauranteId">
+
+        <label for="nota">Nota (1 a 5):</label>
+        <input type="number" id="nota" name="nota" min="1" max="5" required>
+
+        <label for="comentario">Comentário:</label>
+        <textarea id="comentario" name="comentario" maxlength="500"></textarea>
+
+        <button type="submit">Enviar Avaliação</button>
+    </form>
+    <div id="message" class="message" style="display:none;"></div>
+</div>
+
+<script>
+    const restauranteSelect = document.getElementById('restauranteSelect');
+    const formEl = document.getElementById('avaliacaoForm');
+    const messageDiv = document.getElementById('message');
+
+    // Desabilita o formulário até selecionar um restaurante
+    formEl.querySelectorAll('input, textarea, button').forEach(el => el.disabled = true);
+
+    // Predefine restaurante via query param, se houver
+    const params = new URLSearchParams(window.location.search);
+    const preId = params.get('restauranteId');
+    if (preId) {
+        document.getElementById('restauranteId').value = preId;
+    }
+
+    // Carrega restaurantes
+    fetch('/restaurantes', { credentials: 'include' })
+        .then(async response => {
+            if (!response.ok) throw new Error('Falha ao carregar restaurantes');
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) return response.json();
+            const text = await response.text();
+            try { return JSON.parse(text); } catch { throw new Error('Resposta inválida ao listar restaurantes'); }
+        })
+        .then(restaurantes => {
+            restaurantes.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.id;
+                opt.textContent = r.nome;
+                restauranteSelect.appendChild(opt);
+            });
+            if (preId) {
+                restauranteSelect.value = preId;
+                formEl.querySelectorAll('input, textarea, button').forEach(el => el.disabled = false);
+            }
+        })
+        .catch(err => {
+            messageDiv.className = 'message error';
+            messageDiv.textContent = `Erro ao carregar restaurantes: ${err.message}`;
+            messageDiv.style.display = 'block';
+        });
+
+    restauranteSelect.addEventListener('change', () => {
+        const id = restauranteSelect.value;
+        document.getElementById('restauranteId').value = id || '';
+        const enable = !!id;
+        formEl.querySelectorAll('input, textarea, button').forEach(el => el.disabled = !enable);
+    });
+
+    formEl.addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const form = event.target;
+        const nota = Number(form.nota.value);
+        const comentario = form.comentario.value;
+        const restauranteId = form.restauranteId.value;
+
+        const avaliacaoData = {
+            nota: nota,
+            comentario: comentario,
+            restaurante: {
+                id: restauranteId
+            }
+        };
+
+        fetch('/avaliacoes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(avaliacaoData),
+            credentials: 'include'
+        })
+        .then(async response => {
+            if (!response.ok) {
+                // Tenta extrair erro como JSON, senão como texto
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('application/json')) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Erro desconhecido');
+                }
+                const text = await response.text();
+                throw new Error(text || 'Erro desconhecido');
+            }
+
+            const contentLength = response.headers.get('content-length');
+            const contentType = response.headers.get('content-type') || '';
+            if (response.status === 204 || contentLength === '0') return {};
+            if (contentType.includes('application/json')) return response.json();
+            const text = await response.text();
+            try { return JSON.parse(text); } catch { return {}; }
+        })
+        .then(result => {
+            messageDiv.className = 'message success';
+            messageDiv.textContent = 'Avaliação enviada com sucesso!';
+            messageDiv.style.display = 'block';
+            form.reset();
+            // Mantém o restaurante selecionado; não limpa o select
+        })
+        .catch(error => {
+            messageDiv.className = 'message error';
+            messageDiv.textContent = `Erro ao enviar avaliação: ${error.message}`;
+            messageDiv.style.display = 'block';
+        });
+    });
+</script>
+</body>
+</html>

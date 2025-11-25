@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro - Restaurante e Cliente</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 600px;
+            box-sizing: border-box;
+            display: none;
+        }
+        .container.active {
+            display: block;
+        }
+        .button-group {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .button-group button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            margin: 0 10px;
+        }
+        .button-group button:hover {
+            background-color: #0056b3;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"], input[type="email"], input[type="password"], input[type="tel"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        .checkbox-group {
+            margin-bottom: 15px;
+        }
+        .checkbox-group label {
+            display: inline-block;
+            font-weight: normal;
+        }
+        .form-actions {
+            text-align: center;
+        }
+        .form-actions button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+        }
+        .form-actions button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+
+<div class="button-group">
+    <button onclick="showCadastro('cliente')">Cadastrar Cliente</button>
+    <button onclick="showCadastro('restaurante')">Cadastrar Restaurante</button>
+</div>
+
+<div id="cadastroCliente" class="container">
+    <h2>Cadastro de Cliente</h2>
+    <form id="formCliente">
+        <label for="nomeCliente">Nome:</label>
+        <input type="text" id="nomeCliente" name="nome" required>
+
+        <label for="telefoneCliente">Telefone:</label>
+        <input type="tel" id="telefoneCliente" name="telefone">
+
+        <label for="cpfCliente">CPF:</label>
+        <input type="text" id="cpfCliente" name="cpf" required>
+
+        <label for="emailCliente">Email:</label>
+        <input type="email" id="emailCliente" name="email" required>
+
+        <label for="senhaCliente">Senha:</label>
+        <input type="password" id="senhaCliente" name="senha" required>
+
+        <h3>Endereço</h3>
+        <label for="cepCliente">CEP:</label>
+        <input type="text" id="cepCliente" name="cep">
+
+        <label for="ruaCliente">Rua:</label>
+        <input type="text" id="ruaCliente" name="rua">
+
+        <label for="numeroCliente">Número:</label>
+        <input type="text" id="numeroCliente" name="numero">
+
+        <label for="bairroCliente">Bairro:</label>
+        <input type="text" id="bairroCliente" name="bairro">
+
+        <label for="cidadeCliente">Cidade:</label>
+        <input type="text" id="cidadeCliente" name="cidade">
+
+        <label for="estadoCliente">Estado:</label>
+        <input type="text" id="estadoCliente" name="estado">
+
+        <div class="checkbox-group">
+            <input type="checkbox" id="aceitaProtecaoDadosCliente" name="aceitaProtecaoDados">
+            <label for="aceitaProtecaoDadosCliente">Aceito a Política de Proteção de Dados</label>
+        </div>
+        <div class="checkbox-group">
+            <input type="checkbox" id="aceitaMarketingCliente" name="aceitaMarketing">
+            <label for="aceitaMarketingCliente">Desejo receber novidades e promoções por email</label>
+        </div>
+        <div class="checkbox-group">
+            <input type="checkbox" id="aceitaAtendimentoCliente" name="aceitaAtendimento">
+            <label for="aceitaAtendimentoCliente">Aceito ser contatado para pesquisa de satisfação</label>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit">Cadastrar Cliente</button>
+        </div>
+    </form>
+</div>
+
+<div id="cadastroRestaurante" class="container">
+    <h2>Cadastro de Restaurante</h2>
+    <form id="formRestaurante">
+        <label for="nomeRestaurante">Nome:</label>
+        <input type="text" id="nomeRestaurante" name="nome" required>
+
+        <label for="cnpjRestaurante">CNPJ:</label>
+        <input type="text" id="cnpjRestaurante" name="cnpj" required>
+
+        <label for="telefoneRestaurante">Telefone:</label>
+        <input type="tel" id="telefoneRestaurante" name="telefone">
+
+        <label for="emailRestaurante">Email:</label>
+        <input type="email" id="emailRestaurante" name="email" required>
+
+        <label for="senhaRestaurante">Senha:</label>
+        <input type="password" id="senhaRestaurante" name="senha" required>
+
+        <h3>Endereço</h3>
+        <label for="cepRestaurante">CEP:</label>
+        <input type="text" id="cepRestaurante" name="cep">
+
+        <label for="ruaRestaurante">Rua:</label>
+        <input type="text" id="ruaRestaurante" name="rua">
+
+        <label for="numeroRestaurante">Número:</label>
+        <input type="text" id="numeroRestaurante" name="numero">
+
+        <label for="bairroRestaurante">Bairro:</label>
+        <input type="text" id="bairroRestaurante" name="bairro">
+
+        <label for="cidadeRestaurante">Cidade:</label>
+        <input type="text" id="cidadeRestaurante" name="cidade">
+
+        <label for="estadoRestaurante">Estado:</label>
+        <input type="text" id="estadoRestaurante" name="estado">
+
+        <div class="checkbox-group">
+            <input type="checkbox" id="aceitaComunicacao" name="aceitaComunicacao">
+            <label for="aceitaComunicacao">Aceito receber comunicações</label>
+        </div>
+        <div class="checkbox-group">
+            <input type="checkbox" id="aceitaMarketing" name="aceitaMarketing">
+            <label for="aceitaMarketing">Aceito receber promoções por e-mail</label>
+        </div>
+        <div class="checkbox-group">
+            <input type="checkbox" id="aceitaProtecaoDados" name="aceitaProtecaoDados">
+            <label for="aceitaProtecaoDados">Aceito a Política de Proteção de Dados</label>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit">Cadastrar Restaurante</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Função para mostrar a seção de cadastro
+    function showCadastro(tipo) {
+        const clienteDiv = document.getElementById('cadastroCliente');
+        const restauranteDiv = document.getElementById('cadastroRestaurante');
+
+        if (tipo === 'cliente') {
+            clienteDiv.classList.add('active');
+            restauranteDiv.classList.remove('active');
+        } else if (tipo === 'restaurante') {
+            restauranteDiv.classList.add('active');
+            clienteDiv.classList.remove('active');
+        }
+    }
+
+    // Função para buscar o CEP na API do ViaCEP
+    async function buscarCep(cep, ruaId, bairroId, cidadeId, estadoId) {
+        if (!cep) return;
+
+        try {
+            const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+            const data = await response.json();
+
+            if (!data.erro) {
+                document.getElementById(ruaId).value = data.logradouro;
+                document.getElementById(bairroId).value = data.bairro;
+                document.getElementById(cidadeId).value = data.localidade;
+                document.getElementById(estadoId).value = data.uf;
+            } else {
+                alert('CEP não encontrado.');
+            }
+        } catch (error) {
+            alert('Erro ao buscar o CEP.');
+        }
+    }
+
+    // Lógica para o formulário de Cadastro de Cliente
+    document.getElementById('formCliente').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const form = event.target;
+        const formData = new FormData(form);
+        const clienteData = Object.fromEntries(formData.entries());
+
+        clienteData.aceitaProtecaoDados = form.elements['aceitaProtecaoDados'].checked;
+        clienteData.aceitaMarketing = form.elements['aceitaMarketing'].checked;
+        clienteData.aceitaAtendimento = form.elements['aceitaAtendimento'].checked;
+
+        try {
+            const response = await fetch('/clientes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(clienteData)
+            });
+
+            if (response.status === 201) {
+                alert('Cliente cadastrado com sucesso!');
+                form.reset();
+            } else {
+                const errorData = await response.json();
+                alert('Erro ao cadastrar cliente: ' + (errorData.message || response.statusText));
+            }
+        } catch (error) {
+            alert('Ocorreu um erro na requisição: ' + error.message);
+        }
+    });
+
+    // Lógica para o formulário de Cadastro de Restaurante
+    document.getElementById('formRestaurante').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const form = event.target;
+        const formData = new FormData(form);
+        const restauranteData = Object.fromEntries(formData.entries());
+
+        restauranteData.aceitaComunicacao = form.elements['aceitaComunicacao'].checked;
+        restauranteData.aceitaMarketing = form.elements['aceitaMarketing'].checked;
+        restauranteData.aceitaProtecaoDados = form.elements['aceitaProtecaoDados'].checked;
+
+        try {
+            const response = await fetch('/restaurantes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(restauranteData)
+            });
+
+            if (response.status === 201) {
+                alert('Restaurante cadastrado com sucesso!');
+                form.reset();
+            } else {
+                const errorData = await response.json();
+                alert('Erro ao cadastrar restaurante: ' + (errorData.message || response.statusText));
+            }
+        } catch (error) {
+            alert('Ocorreu um erro na requisição: ' + error.message);
+        }
+    });
+
+    // Event listener para o campo de CEP do Cliente
+    document.getElementById('cepCliente').addEventListener('blur', (event) => {
+        const cep = event.target.value.replace(/\D/g, '');
+        buscarCep(cep, 'ruaCliente', 'bairroCliente', 'cidadeCliente', 'estadoCliente');
+    });
+
+    // Event listener para o campo de CEP do Restaurante
+    document.getElementById('cepRestaurante').addEventListener('blur', (event) => {
+        const cep = event.target.value.replace(/\D/g, '');
+        buscarCep(cep, 'ruaRestaurante', 'bairroRestaurante', 'cidadeRestaurante', 'estadoRestaurante');
+    });
+
+    window.onload = () => showCadastro('cliente');
+</script>
+
+</body>
+</html>

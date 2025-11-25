@@ -1,0 +1,77 @@
+version: "3.9"
+
+services:
+  # ======================================
+  # 🟢 Banco de dados PostgreSQL
+  # ======================================
+  db:
+    image: postgres:16
+    container_name: postgres-restaurante
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: restaurante
+    ports:
+      - "5432:5432"
+    networks:
+      - sabore-network
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # ======================================
+  # 🟣 Backend - modo PRODUÇÃO (jar final)
+  # ======================================
+  backend:
+    build: .
+    container_name: backend-restaurante
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/restaurante
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 123456
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+    ports:
+      - "8080:8080"
+    networks:
+      - sabore-network
+
+  # ======================================
+  # ⚡ Backend - modo DESENVOLVIMENTO (hot reload)
+  # ======================================
+  backend-dev:
+    container_name: backend-restaurante-dev
+    build:
+      context: .
+      dockerfile: Dockerfile.dev   # usa o Dockerfile de desenvolvimento
+    command: mvn spring-boot:run
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app                     # mapeia o código local
+      - maven_cache:/root/.m2      # cache Maven persistente dentro do Docker
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/restaurante
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 123456
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_PROFILES_ACTIVE: dev
+    networks:
+      - sabore-network
+
+# ======================================
+# 🔵 Rede e volumes persistentes
+# ======================================
+networks:
+  sabore-network:
+    driver: bridge
+
+volumes:
+  pgdata:
+  maven_cache:
